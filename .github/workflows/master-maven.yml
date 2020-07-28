@@ -23,8 +23,8 @@ jobs:
     - name: Build with Maven
       run: mvn -B package -Dmaven.javadoc.skip=true --file pom.xml
     - name: Stage Artifacts
-      run: mkdir staging && cp target/*.jar staging && cp target/*.tar.gz staging
+      run: mkdir staging && cp target/*.tar.gz staging
     - uses: actions/upload-artifact@v2
       with:
-        name: Package
+        #name: Package
         path: staging
