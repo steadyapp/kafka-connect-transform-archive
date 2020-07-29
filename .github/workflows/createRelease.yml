@@ -13,8 +13,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build with Maven
-        run: mvn -B package -Dmaven.javadoc.skip=true --file pom.xml |
-          cp target/plugins/packages/*plugin.zip ./kafka-connect-transform-archive-plugin.zip
+        run: mvn -B package -Dmaven.javadoc.skip=true --file pom.xml &&
+          cp ./target/plugins/packages/*plugin.zip ./kafka-connect-transform-archive-plugin.zip
 #      - name: Stage Artifacts
 #        run: mkdir staging && cp target/*.tar.gz staging
 #      - uses: actions/upload-artifact@v2
