@@ -19,7 +19,7 @@ jobs:
           java-version: 1.11
       - name: Build with Maven
         run: mvn -B package -Dmaven.javadoc.skip=true --file pom.xml &&
-          cp ./target/plugins/packages/*plugin.zip ./kafka-connect-transform-archive-plugin.zip
+          cp ./target/kafka-connect-transform-archive*.tar.gz ./kafka-connect-transform-archive.tar.gz
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -37,6 +37,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./kafka-connect-transform-archive-plugin.zip
-          asset_name: kafka-connect-transform-archive-plugin.zip
-          asset_content_type: application/zip
+          asset_path: ./kafka-connect-transform-archive.tar.gz
+          asset_name: kafka-connect-transform-archive.tar.gz
+          asset_content_type: application/gzip
