@@ -5,6 +5,7 @@ on:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 name: Create Release from Tag
+
 jobs:
   build:
     name: Upload Release Asset
@@ -15,12 +16,6 @@ jobs:
       - name: Build with Maven
         run: mvn -B package -Dmaven.javadoc.skip=true --file pom.xml &&
           cp ./target/plugins/packages/*plugin.zip ./kafka-connect-transform-archive-plugin.zip
-#      - name: Stage Artifacts
-#        run: mkdir staging && cp target/*.tar.gz staging
-#      - uses: actions/upload-artifact@v2
-#        with:
-#          name: kafka-connect-transform-archive.zip
-#          path: staging
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

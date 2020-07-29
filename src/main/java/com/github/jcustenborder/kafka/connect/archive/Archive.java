@@ -17,6 +17,9 @@ package com.github.jcustenborder.kafka.connect.archive;
 
 import com.github.jcustenborder.kafka.connect.utils.config.Description;
 import com.github.jcustenborder.kafka.connect.utils.config.DocumentationNote;
+import org.apache.kafka.common.cache.SynchronizedCache;
+import org.apache.kafka.common.cache.LRUCache;
+import org.apache.kafka.common.cache.Cache;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Schema;
@@ -26,34 +29,59 @@ import org.apache.kafka.connect.transforms.Transformation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Description("The Archive transformation is used to help preserve all of the data for a message when archived to S3.")
 @DocumentationNote("This transform works by copying the key, value, topic, and timestamp to new record where this is all " +
-    "contained in the value of the message. This will allow connectors like Confluent's S3 connector to properly archive " +
-    "the record.")
+        "contained in the value of the message. This will allow connectors like Confluent's S3 connector to properly archive " +
+        "the record.")
 public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
+
+  private Cache<String, Schema> schemaUpdateCache;
+
   @Override
   public R apply(R r) {
-    if (r.valueSchema() == null) {
+    if (r.valueSchema() == null && r.keySchema() == null) {
       return applySchemaless(r);
     } else {
       return applyWithSchema(r);
     }
   }
 
+  private Schema makeUpdatedSchema(Schema keySchema, Schema valueSchema) {
+    return SchemaBuilder.struct()
+            .name("com.github.jcustenborder.kafka.connect.archive.Storage")
+            .field("key", keySchema).optional()
+            .field("value", valueSchema).optional()
+            .field("topic", Schema.STRING_SCHEMA)
+            .field("timestamp", Schema.INT64_SCHEMA);
+  }
+
   private R applyWithSchema(R r) {
-    final Schema schema = SchemaBuilder.struct()
-        .name("com.github.jcustenborder.kafka.connect.archive.Storage")
-        .field("key", r.keySchema())
-        .field("value", r.valueSchema())
-        .field("topic", Schema.STRING_SCHEMA)
-        .field("timestamp", Schema.INT64_SCHEMA);
+    String cacheKey = String.format("%s-key", r.topic());
+    String cacheValue = String.format("%s-value", r.topic());
+
+    Schema keySchema = r.keySchema();
+    if (keySchema == null) {
+      keySchema = Objects.requireNonNullElse(schemaUpdateCache.get(cacheKey), Schema.OPTIONAL_STRING_SCHEMA);
+    } else if (Objects.requireNonNullElse(schemaUpdateCache.get(cacheKey), Schema.OPTIONAL_STRING_SCHEMA).version() < keySchema.version()) {
+      schemaUpdateCache.put(cacheKey, keySchema);
+    }
+
+    Schema valueSchema = r.valueSchema();
+    if (valueSchema == null) {
+      valueSchema = Objects.requireNonNullElse(schemaUpdateCache.get(cacheValue), Schema.OPTIONAL_STRING_SCHEMA);
+    } else if (Objects.requireNonNullElse(schemaUpdateCache.get(cacheValue), Schema.OPTIONAL_STRING_SCHEMA).version() < valueSchema.version()) {
+      schemaUpdateCache.put(cacheValue, valueSchema);
+    }
+
+    Schema schema = makeUpdatedSchema(keySchema, valueSchema);
     Struct value = new Struct(schema)
-        .put("key", r.key())
-        .put("value", r.value())
-        .put("topic", r.topic())
-        .put("timestamp", r.timestamp());
-    return r.newRecord(r.topic(), r.kafkaPartition(), null, null, schema, value, r.timestamp());
+            .put("key", r.key())
+            .put("value", r.value())
+            .put("topic", r.topic())
+            .put("timestamp", r.timestamp());
+    return r.newRecord(r.topic(), r.kafkaPartition(), r.keySchema(), r.key(), schema, value, r.timestamp());
   }
 
   @SuppressWarnings("unchecked")
@@ -68,7 +96,7 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
     archiveValue.put("topic", r.topic());
     archiveValue.put("timestamp", r.timestamp());
 
-    return r.newRecord(r.topic(), r.kafkaPartition(), null, null, null, archiveValue, r.timestamp());
+    return r.newRecord(r.topic(), r.kafkaPartition(), r.keySchema(), r.key(), null, archiveValue, r.timestamp());
   }
 
   @Override
@@ -83,6 +111,6 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
   @Override
   public void configure(Map<String, ?> map) {
-
+    schemaUpdateCache = new SynchronizedCache<>(new LRUCache<String, Schema>(16));
   }
 }
