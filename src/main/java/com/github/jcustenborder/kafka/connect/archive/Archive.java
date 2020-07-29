@@ -60,19 +60,34 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
   private R applyWithSchema(R r) {
     String cacheKey = String.format("%s-key", r.topic());
     String cacheValue = String.format("%s-value", r.topic());
+    Schema cachedKey = schemaUpdateCache.get(cacheKey);
+    Schema cachedValue = schemaUpdateCache.get(cacheValue);
 
     Schema keySchema = r.keySchema();
     if (keySchema == null) {
-      keySchema = Objects.requireNonNullElse(schemaUpdateCache.get(cacheKey), Schema.OPTIONAL_STRING_SCHEMA);
-    } else if (Objects.requireNonNullElse(schemaUpdateCache.get(cacheKey), Schema.OPTIONAL_STRING_SCHEMA).version() < keySchema.version()) {
-      schemaUpdateCache.put(cacheKey, keySchema);
+      keySchema = (cachedKey != null ? cachedKey : Schema.OPTIONAL_STRING_SCHEMA);
+    } else {
+      if (cachedKey != null) {
+        if (schemaUpdateCache.get(cacheKey).version() < keySchema.version()) {
+          schemaUpdateCache.put(cacheKey, keySchema);
+        }
+      } else {
+        schemaUpdateCache.put(cacheKey, keySchema);
+      }
     }
 
     Schema valueSchema = r.valueSchema();
     if (valueSchema == null) {
-      valueSchema = Objects.requireNonNullElse(schemaUpdateCache.get(cacheValue), Schema.OPTIONAL_STRING_SCHEMA);
-    } else if (Objects.requireNonNullElse(schemaUpdateCache.get(cacheValue), Schema.OPTIONAL_STRING_SCHEMA).version() < valueSchema.version()) {
-      schemaUpdateCache.put(cacheValue, valueSchema);
+      Schema cached = schemaUpdateCache.get(cacheValue);
+      valueSchema = (cached != null ? cached : Schema.OPTIONAL_STRING_SCHEMA);
+    } else {
+      if (cachedValue != null) {
+        if (schemaUpdateCache.get(cacheValue).version() < valueSchema.version()) {
+          schemaUpdateCache.put(cacheValue, valueSchema);
+        }
+      } else {
+        schemaUpdateCache.put(cacheValue, valueSchema);
+      }
     }
 
     Schema schema = makeUpdatedSchema(keySchema, valueSchema);
