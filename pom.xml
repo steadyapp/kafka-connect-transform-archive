@@ -101,7 +101,7 @@
                 <tag>S3</tag>
               </tags>
               <title>Archive Transformation</title>
-              <supportUrl>${pom.issueManagement.url}</supportUrl>
+              <supportUrl>${project.issueManagement.url}</supportUrl>
               <supportSummary>Support provided through community involvement.
               </supportSummary>
             </configuration>
