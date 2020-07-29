@@ -14,12 +14,12 @@ jobs:
         uses: actions/checkout@v2
       - name: Build with Maven
         run: mvn -B package -Dmaven.javadoc.skip=true --file pom.xml
-      - name: Stage Artifacts
-        run: cp target/*.tar.gz ${{ github.workspace }}
-      - uses: actions/upload-artifact@v2
-        with:
-          name: kafka-connect-transform-archive.zip
-          path: ${{ github.workspace }}
+#      - name: Stage Artifacts
+#        run: mkdir staging && cp target/*.tar.gz staging
+#      - uses: actions/upload-artifact@v2
+#        with:
+#          name: kafka-connect-transform-archive.zip
+#          path: staging
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -37,6 +37,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ${{ github.workspace }}
-          asset_name: kafka-connect-transform-archive.zip
-          asset_content_type: application/zip
+          asset_path: ./target/kafka-connect-transform-archive.tar.gz
+          asset_name: kafka-connect-transform-archive.tar.gz
+          asset_content_type: application/gzip
