@@ -87,13 +87,10 @@
               <goal>kafka-connect</goal>
             </goals>
             <configuration>
-              <ownerUsername>jcustenborder</ownerUsername>
+              <ownerUsername>steady</ownerUsername>
               <confluentControlCenterIntegration>true
               </confluentControlCenterIntegration>
-              <documentationUrl>
-                https://jcustenborder.github.io/kafka-connect-documentation/
-              </documentationUrl>
-              <ownerName>Jeremy Custenborder</ownerName>
+
               <dockerNamespace>jcustenborder</dockerNamespace>
               <dockerName>kafka-connect-docker</dockerName>
               <pluginTypes>
