@@ -91,7 +91,7 @@
               <confluentControlCenterIntegration>true
               </confluentControlCenterIntegration>
 
-              <dockerNamespace>jcustenborder</dockerNamespace>
+              <dockerNamespace>steady</dockerNamespace>
               <dockerName>kafka-connect-docker</dockerName>
               <pluginTypes>
                 <pluginType>transform</pluginType>
