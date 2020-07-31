@@ -26,6 +26,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.transforms.Transformation;
+import org.apache.kafka.connect.transforms.util.SchemaUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,10 +56,17 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
   private Schema makeUpdatedSchema(Schema keySchema, Schema valueSchema) {
 
+    Schema key = SchemaUtil.copySchemaBasics(keySchema, SchemaBuilder.type(keySchema.type()))
+            .optional().defaultValue(null)
+            .build();
+    Schema value = SchemaUtil.copySchemaBasics(valueSchema, SchemaBuilder.type(valueSchema.type()))
+            .optional().defaultValue(null)
+            .build();
+
     return SchemaBuilder.struct()
             .name("com.github.jcustenborder.kafka.connect.archive.Storage")
-            .field("key", keySchema).optional().defaultValue(null)
-            .field("value", valueSchema).optional().defaultValue(null)
+            .field("key", key)
+            .field("value", value)
             .field("topic", Schema.STRING_SCHEMA)
             .field("timestamp", Schema.INT64_SCHEMA);
   }
