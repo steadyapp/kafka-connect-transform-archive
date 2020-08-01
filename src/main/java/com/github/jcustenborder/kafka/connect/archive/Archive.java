@@ -27,10 +27,10 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.transforms.Transformation;
 
+
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.kafka.connect.transforms.util.Requirements.requireStructOrNull;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMapOrNull;
 
 @Description("The Archive transformation is used to help preserve all of the data for a message when archived to S3.")
@@ -41,8 +41,6 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
   private static final String PURPOSE_KEY = "Message key enclosed into a field";
   private static final String PURPOSE_VALUE = "Message value enclosed into a field";
-
-  private Cache<String, Schema> schemaUpdateCache;
 
   @Override
   public R apply(R r) {
@@ -57,47 +55,31 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
     return SchemaBuilder.struct()
             .name("com.github.jcustenborder.kafka.connect.archive.Storage")
-            .field("key", keySchema).optional().defaultValue(null)
-            .field("value", valueSchema).optional().defaultValue(null)
+            .field("key", keySchema)
+            .field("value", valueSchema)
             .field("topic", Schema.STRING_SCHEMA)
             .field("timestamp", Schema.INT64_SCHEMA);
   }
 
   private R applyWithSchema(R r) {
-    String cacheKey = String.format("%s-key", r.topic());
-    String cacheValue = String.format("%s-value", r.topic());
-    Schema cachedKeySchema = schemaUpdateCache.get(cacheKey);
-    Schema cachedValueSchema = schemaUpdateCache.get(cacheValue);
 
     Schema keySchema = r.keySchema();
     Schema valueSchema = r.valueSchema();
-    final Struct recordKey = requireStructOrNull(r.key(), PURPOSE_KEY);
-    final Struct recordValue = requireStructOrNull(r.value(), PURPOSE_VALUE);
 
     if (keySchema == null) {
-      keySchema = (cachedKeySchema != null ? cachedKeySchema : Schema.OPTIONAL_STRING_SCHEMA);
-    } else {
-      // last schema wins
-      schemaUpdateCache.put(cacheKey, keySchema);
+      keySchema = Schema.OPTIONAL_STRING_SCHEMA;
     }
 
     if (valueSchema == null) {
-      valueSchema = (cachedValueSchema != null ? cachedValueSchema : Schema.OPTIONAL_STRING_SCHEMA);
-    } else {
-      // last schema wins
-      schemaUpdateCache.put(cacheValue, valueSchema);
+      valueSchema = Schema.OPTIONAL_STRING_SCHEMA;
     }
 
     Schema schema = makeUpdatedSchema(keySchema, valueSchema);
     Struct value = new Struct(schema)
+            .put("key", r.key())
+            .put("value", r.value())
             .put("topic", r.topic())
             .put("timestamp", r.timestamp());
-    if (recordKey != null) {
-      value.put("key", recordKey);
-    }
-    if (recordValue != null) {
-      value.put("value", recordValue);
-    }
 
     return r.newRecord(r.topic(), r.kafkaPartition(), r.keySchema(), r.key(), schema, value, r.timestamp());
   }
@@ -129,6 +111,5 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
   @Override
   public void configure(Map<String, ?> map) {
-    schemaUpdateCache = new SynchronizedCache<>(new LRUCache<>(16));
   }
 }
