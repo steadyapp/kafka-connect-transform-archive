@@ -17,9 +17,6 @@ package com.github.jcustenborder.kafka.connect.archive;
 
 import com.github.jcustenborder.kafka.connect.utils.config.Description;
 import com.github.jcustenborder.kafka.connect.utils.config.DocumentationNote;
-import org.apache.kafka.common.cache.SynchronizedCache;
-import org.apache.kafka.common.cache.LRUCache;
-import org.apache.kafka.common.cache.Cache;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Schema;
