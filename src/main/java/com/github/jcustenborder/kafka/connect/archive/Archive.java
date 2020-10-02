@@ -56,7 +56,23 @@ class SchemaPair {
       return false;
     }
     SchemaPair other = (SchemaPair) o;
-    return keySchema.equals(other.keySchema) && valueSchema.equals(other.valueSchema);
+
+    // the pain of nulls
+    boolean keyMatch = false;
+    if (keySchema != null && other.keySchema != null) {
+      keyMatch = keySchema.equals(other.keySchema);
+    } else if (keySchema == null && other.keySchema == null) {
+      keyMatch = true;
+    }
+
+    boolean valueMatch = false;
+    if (valueSchema != null && other.valueSchema != null) {
+      valueMatch = valueSchema.equals(other.valueSchema);
+    } else if (valueSchema == null && other.valueSchema == null) {
+      valueMatch = true;
+    }
+
+    return keyMatch && valueMatch;
   }
 }
 
@@ -84,9 +100,11 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
     Schema keySchema = schemaPair.keySchema;
     Schema valueSchema = schemaPair.valueSchema;
     // verify schemas to ensure non-null, object can be null but schema must be defined at least as optional
+    // Define Key schema
     if (keySchema == null) {
       keySchema = Schema.OPTIONAL_STRING_SCHEMA;
     }
+    // Define Value schema
     if (valueSchema == null) {
       valueSchema = Schema.OPTIONAL_STRING_SCHEMA;
     }
