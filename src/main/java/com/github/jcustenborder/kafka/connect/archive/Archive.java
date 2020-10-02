@@ -17,6 +17,9 @@ package com.github.jcustenborder.kafka.connect.archive;
 
 import com.github.jcustenborder.kafka.connect.utils.config.Description;
 import com.github.jcustenborder.kafka.connect.utils.config.DocumentationNote;
+import org.apache.kafka.common.cache.LRUCache;
+import org.apache.kafka.common.cache.SynchronizedCache;
+import org.apache.kafka.common.cache.Cache;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Schema;
@@ -30,6 +33,49 @@ import java.util.Map;
 
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMapOrNull;
 
+
+class SchemaPair {
+  Schema keySchema;
+  Schema valueSchema;
+
+  public SchemaPair(Schema keySchema, Schema valueSchema) {
+    this.keySchema = keySchema;
+    this.valueSchema = valueSchema;
+  }
+
+  public int hashCode() {
+    int result = (this.keySchema != null ? this.keySchema.hashCode() : 0);
+    result = 31 * result + (this.valueSchema != null ? this.valueSchema.hashCode() : 0);
+    return result;
+  }
+
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    } else if (!(o instanceof SchemaPair)) {
+      return false;
+    }
+    SchemaPair other = (SchemaPair) o;
+
+    // the pain of nulls
+    boolean keyMatch = false;
+    if (keySchema != null && other.keySchema != null) {
+      keyMatch = keySchema.equals(other.keySchema);
+    } else if (keySchema == null && other.keySchema == null) {
+      keyMatch = true;
+    }
+
+    boolean valueMatch = false;
+    if (valueSchema != null && other.valueSchema != null) {
+      valueMatch = valueSchema.equals(other.valueSchema);
+    } else if (valueSchema == null && other.valueSchema == null) {
+      valueMatch = true;
+    }
+
+    return keyMatch && valueMatch;
+  }
+}
+
 @Description("The Archive transformation is used to help preserve all of the data for a message when archived to S3.")
 @DocumentationNote("This transform works by copying the key, value, topic, and timestamp to new record where this is all " +
         "contained in the value of the message. This will allow connectors like Confluent's S3 connector to properly archive " +
@@ -38,6 +84,7 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
   private static final String PURPOSE_KEY = "Message key enclosed into a field";
   private static final String PURPOSE_VALUE = "Message value enclosed into a field";
+  private Cache<SchemaPair, Schema> schemaUpdateCache;
 
   @Override
   public R apply(R r) {
@@ -48,7 +95,19 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
     }
   }
 
-  private Schema makeUpdatedSchema(Schema keySchema, Schema valueSchema) {
+  private Schema makeUpdatedSchema(SchemaPair schemaPair) {
+
+    Schema keySchema = schemaPair.keySchema;
+    Schema valueSchema = schemaPair.valueSchema;
+    // verify schemas to ensure non-null, object can be null but schema must be defined at least as optional
+    // Define Key schema
+    if (keySchema == null) {
+      keySchema = Schema.OPTIONAL_STRING_SCHEMA;
+    }
+    // Define Value schema
+    if (valueSchema == null) {
+      valueSchema = Schema.OPTIONAL_STRING_SCHEMA;
+    }
 
     return SchemaBuilder.struct()
             .name("com.github.jcustenborder.kafka.connect.archive.Storage")
@@ -60,18 +119,13 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
   private R applyWithSchema(R r) {
 
-    Schema keySchema = r.keySchema();
-    Schema valueSchema = r.valueSchema();
-
-    if (keySchema == null) {
-      keySchema = Schema.OPTIONAL_STRING_SCHEMA;
+    SchemaPair pair = new SchemaPair(r.keySchema(), r.valueSchema());
+    Schema schema = schemaUpdateCache.get(pair);
+    if (schema == null) {
+      schema = makeUpdatedSchema(pair);
+      schemaUpdateCache.put(pair, schema);
     }
 
-    if (valueSchema == null) {
-      valueSchema = Schema.OPTIONAL_STRING_SCHEMA;
-    }
-
-    Schema schema = makeUpdatedSchema(keySchema, valueSchema);
     Struct value = new Struct(schema)
             .put("key", r.key())
             .put("value", r.value())
@@ -108,5 +162,6 @@ public class Archive<R extends ConnectRecord<R>> implements Transformation<R> {
 
   @Override
   public void configure(Map<String, ?> map) {
+    schemaUpdateCache = new SynchronizedCache<>(new LRUCache<SchemaPair, Schema>(32));
   }
 }
