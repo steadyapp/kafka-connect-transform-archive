@@ -19,17 +19,13 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>com.github.jcustenborder.kafka.connect</groupId>
-    <artifactId>kafka-connect-parent</artifactId>
-    <version>1.0.0</version>
-  </parent>
-  <artifactId>kafka-connect-transform-archive</artifactId>
-  <version>0.3.4-SNAPSHOT</version>
-  <name>kafka-connect-transform-archive</name>
-  <url>https://github.com/jcustenborder/kafka-connect-transform-archive</url>
-  <inceptionYear>2017</inceptionYear>
-  <description>Kafka Connect transformation used to help with archiving data to s3. This transformation copies the timestamp, topic, key, and value to a struct in the value of the record.</description>
+  <groupId>com.steadyapp.kafka.connect.transforms</groupId>
+  <artifactId>common-transforms</artifactId>
+  <version>0.4.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>common-transforms</name>
+  <description>Kafka Connect transformations slightly enhanced.</description>
   <licenses>
     <license>
       <name>Apache License 2.0</name>
@@ -37,47 +33,12 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <developers>
-    <developer>
-      <name>Jeremy Custenborder</name>
-      <email>jeremy@confluent.io</email>
-      <url>https://github.com/jcustenborder</url>
-      <roles>
-        <role>maintainer</role>
-      </roles>
-    </developer>
-  </developers>
-  <scm>
-    <connection>scm:git:https://github.com/jcustenborder/kafka-connect-transform-archive.git</connection>
-    <developerConnection>scm:git:git@github.com:jcustenborder/kafka-connect-transform-archive.git</developerConnection>
-    <url>https://github.com/jcustenborder/kafka-connect-transform-archive</url>
-  </scm>
-  <issueManagement>
-    <system>github</system>
-    <url>https://github.com/jcustenborder/kafka-connect-transform-archive/issues</url>
-  </issueManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>connect-transforms</artifactId>
       <version>2.4.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jcustenborder</groupId>
-      <artifactId>cef-parser</artifactId>
-      <version>[0.0.1.7,0.0.1.2000)</version>
-    </dependency>
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <version>0.9.10</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.github.jcustenborder.kafka.connect</groupId>
-      <artifactId>connect-utils-testing-data</artifactId>
-      <version>[0.2.33,0.2.1000)</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
@@ -93,8 +54,6 @@
             </goals>
             <configuration>
               <ownerUsername>steady</ownerUsername>
-              <confluentControlCenterIntegration>true
-              </confluentControlCenterIntegration>
 
               <dockerNamespace>steady</dockerNamespace>
               <dockerName>kafka-connect-docker</dockerName>
@@ -102,13 +61,10 @@
                 <pluginType>transform</pluginType>
               </pluginTypes>
               <tags>
-                <tag>Archive</tag>
-                <tag>S3</tag>
+                <tag>Common</tag>
+                <tag>NestedSupport</tag>
               </tags>
-              <title>Archive Transformation</title>
-              <supportUrl>${project.issueManagement.url}</supportUrl>
-              <supportSummary>Support provided through community involvement.
-              </supportSummary>
+              <title>Common Transformations</title>
             </configuration>
           </execution>
         </executions>
