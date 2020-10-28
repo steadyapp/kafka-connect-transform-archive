@@ -35,7 +35,6 @@ import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStruct;
 
 
-
 public abstract class ReplaceField<R extends ConnectRecord<R>> implements Transformation<R> {
 
   public static final String OVERVIEW_DOC = "Filter or rename fields."
@@ -62,7 +61,7 @@ public abstract class ReplaceField<R extends ConnectRecord<R>> implements Transf
 
         @Override
         public String toString() {
-          return "list of colon-delimited pairs, e.g. <code>foo:bar,abc:xyz</code>";
+          return "list of colon-delimited pairs, e.g. <code>foo:bar,foo.level2:node2,abc:xyz</code>";
         }
       }, ConfigDef.Importance.MEDIUM, "Field rename mappings.");
 
